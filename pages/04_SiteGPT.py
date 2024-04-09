@@ -3,34 +3,11 @@ from langchain.document_loaders import SitemapLoader
 from langchain.schema.runnable import RunnableLambda, RunnablePassthrough
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores.faiss import FAISS
-from langchain.embeddings import CacheBackedEmbeddings, OpenAIEmbeddings
+from langchain.embeddings import OpenAIEmbeddings
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 import streamlit as st
 
-api_key = st.session_state.get("api_key", "")
-
-with st.sidebar:
-    api_key = st.text_input("OpenAI_API_key", type="password")
-    st.session_state["api_key"] = api_key
-    if api_key:
-        st.caption("API key is set.")
-    else:
-        st.caption("Please enter your API key ⬆️.")
-
-if api_key == "":
-    st.error("Please enter your OpenAI API key")
-    st.stop()
-else:
-    llm = ChatOpenAI(
-        temperature=0.1,
-        model="gpt-3.5-turbo-0125",
-        streaming=True,
-        callbacks=[
-            StreamingStdOutCallbackHandler(),
-        ],
-        api_key=api_key,
-    )
 
 answers_prompt = ChatPromptTemplate.from_template(
     """
@@ -155,8 +132,7 @@ def load_website(url):
     loader.requests_per_second = 2
     docs = loader.load_and_split(text_splitter=splitter)
     embeddings = OpenAIEmbeddings(api_key=api_key)
-    cached_embeddings = CacheBackedEmbeddings.from_bytes_store(embeddings)
-    vector_store = FAISS.from_documents(docs, cached_embeddings, OpenAIEmbeddings())
+    vector_store = FAISS.from_documents(docs, OpenAIEmbeddings())
     return vector_store.as_retriever()
 
 
@@ -165,10 +141,34 @@ st.set_page_config(
     page_icon="🖥️",
 )
 
+st.title("SiteGPT")
+
+api_key = st.session_state.get("api_key", "")
+
+with st.sidebar:
+    api_key = st.text_input("Put your OpenAI API Key here.")
+    st.session_state["api_key"] = api_key
+    if api_key:
+        st.caption("API key is set.")
+    else:
+        st.caption("Please enter your API key ⬆️.")
+
+if api_key == "":
+    st.stop()
+else:
+    llm = ChatOpenAI(
+        temperature=0.1,
+        model="gpt-3.5-turbo-0125",
+        streaming=True,
+        callbacks=[
+            StreamingStdOutCallbackHandler(),
+        ],
+        api_key=api_key,
+    )
+
+
 st.markdown(
     """
-    # SiteGPT
-            
     Ask questions about the content of a website.
             
     Start by writing the URL of the website on the sidebar.
@@ -228,5 +228,5 @@ else:
 
 with st.sidebar:
     st.write(
-        "https://github.com/breakerc-J/chapter_one-bot/blob/main/pages/03_QuizGPT.py"
+        "https://github.com/breakerc-J/site_gpt/blob/master/pages/04_SiteGPT.py"
     )
