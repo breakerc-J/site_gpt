@@ -194,7 +194,8 @@ if url:
         query = st.text_input(
             """
             This is a SiteGPT version for Cloudflare's documentation.
-            Ask a questions about the documentation of each one of these products:
+            Ask a questions about the documentation of each one of these
+            products:
             - AI Gateway
             - Cloudflare Vectorize
             - Workers AI
