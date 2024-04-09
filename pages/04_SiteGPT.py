@@ -113,6 +113,7 @@ def load_website(url):
         chunk_size=1000,
         chunk_overlap=200,
     )
+    
     loader = SitemapLoader(
         url,
         #filter_urls=[
@@ -131,8 +132,7 @@ def load_website(url):
     )
     loader.requests_per_second = 2
     docs = loader.load_and_split(text_splitter=splitter)
-    embeddings = OpenAIEmbeddings(api_key=api_key)
-    vector_store = FAISS.from_documents(docs, OpenAIEmbeddings())
+    vector_store = FAISS.from_documents(docs, OpenAIEmbeddings(api_key=api_key))
     return vector_store.as_retriever()
 
 
@@ -142,11 +142,17 @@ st.set_page_config(
 )
 
 st.title("SiteGPT")
-
+st.markdown(
+    """
+    Ask questions about the content of a website.
+            
+    Start by writing the URL of the website on the sidebar.
+    """
+)
 api_key = st.session_state.get("api_key", "")
 
 with st.sidebar:
-    api_key = st.text_input("Put your OpenAI API Key here.")
+    api_key = st.text_input("OpenAI_API_key", type="password")
     st.session_state["api_key"] = api_key
     if api_key:
         st.caption("API key is set.")
@@ -154,26 +160,21 @@ with st.sidebar:
         st.caption("Please enter your API key ⬆️.")
 
 if api_key == "":
+    st.error("Please enter your OpenAI API key")
     st.stop()
 else:
     llm = ChatOpenAI(
         temperature=0.1,
         model="gpt-3.5-turbo-0125",
+        api_key=api_key,
         streaming=True,
         callbacks=[
             StreamingStdOutCallbackHandler(),
         ],
-        api_key=api_key,
     )
 
 
-st.markdown(
-    """
-    Ask questions about the content of a website.
-            
-    Start by writing the URL of the website on the sidebar.
-"""
-)
+
 
 url_cloudflare = "https://developers.cloudflare.com/sitemap.xml"
 
@@ -224,7 +225,7 @@ if url:
             result = chain.invoke(query)
             st.markdown(result.content.replace("$", "\$"))
 else:
-    st.warning("Please enter your OpenAI API Key.")
+    st.warning("API key is set. Writing the URL of the website on the sidebar.")
 
 with st.sidebar:
     st.write(
