@@ -3,10 +3,34 @@ from langchain.document_loaders import SitemapLoader
 from langchain.schema.runnable import RunnableLambda, RunnablePassthrough
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.vectorstores.faiss import FAISS
-from langchain.embeddings import OpenAIEmbeddings
+from langchain.embeddings import CacheBackedEmbeddings, OpenAIEmbeddings
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 import streamlit as st
+
+api_key = st.session_state.get("api_key", "")
+
+with st.sidebar:
+    api_key = st.text_input("OpenAI_API_key", type="password")
+    st.session_state["api_key"] = api_key
+    if api_key:
+        st.caption("API key is set.")
+    else:
+        st.caption("Please enter your API key ⬆️.")
+
+if api_key == "":
+    st.error("Please enter your OpenAI API key")
+    st.stop()
+else:
+    llm = ChatOpenAI(
+        temperature=0.1,
+        model="gpt-3.5-turbo-0125",
+        streaming=True,
+        callbacks=[
+            StreamingStdOutCallbackHandler(),
+        ],
+        api_key=api_key,
+    )
 
 answers_prompt = ChatPromptTemplate.from_template(
     """
@@ -128,10 +152,11 @@ def load_website(url):
         ),
         parsing_function=parse_page,
     )
-    
     loader.requests_per_second = 2
     docs = loader.load_and_split(text_splitter=splitter)
-    vector_store = FAISS.from_documents(docs, OpenAIEmbeddings())
+    embeddings = OpenAIEmbeddings(api_key=api_key)
+    cached_embeddings = CacheBackedEmbeddings.from_bytes_store(embeddings)
+    vector_store = FAISS.from_documents(docs, cached_embeddings, OpenAIEmbeddings())
     return vector_store.as_retriever()
 
 
@@ -139,19 +164,6 @@ st.set_page_config(
     page_title="SiteGPT",
     page_icon="🖥️",
 )
-
-api_key = st.sidebar.text_input(
-    "Put your OpenAI API Key here"
-    )
-
-if api_key:
-    llm = ChatOpenAI(
-        model="gpt-3.5-turbo-0125",
-        temperature=0.1,
-        callbacks=[StreamingStdOutCallbackHandler()],
-        api_key=api_key,
-    )
-
 
 st.markdown(
     """
