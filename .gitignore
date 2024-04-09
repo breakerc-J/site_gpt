@@ -1,0 +1,12 @@
+env/
+.env
+.cache/
+.streamlit/
+notebook_rag.ipynb
+pages/99_DocumentGPT2.py
+pages/98_DocumentGPT3.py
+pages/97_QuizGPT2.py
+.cache/
+notebook_origin.ipynb
+App.py
+pages/96.SiteGPT2.py
